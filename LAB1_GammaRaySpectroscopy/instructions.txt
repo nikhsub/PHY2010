@@ -1,0 +1,4 @@
+Make sure that the data files are in the same location as the code that is being run
+Run the following on a terminal before using the analysis file:
+
+pip install mcareader
