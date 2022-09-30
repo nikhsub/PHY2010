@@ -6,15 +6,22 @@ import mcareader as mca
 import numpy as np
 
 def compton_counts(x1, x2, y1, y2):
+    cut_ind = -1
+    low_ind = -1
     for i, en in enumerate(x1):
         if(en<=cut_en):continue
         cut_ind = i
         break
 
-    x1_cut = x1[:cut_ind]
-    x2_cut = x2[:cut_ind]
-    y1_cut = y1[:cut_ind]
-    y2_cut = y2[:cut_ind]
+    for i, en in enumerate(x1):
+        if(en<=comp_low_en):continue
+        low_ind = i
+        break
+
+    x1_cut = x1[comp_low_en:cut_ind]
+    x2_cut = x2[comp_low_en:cut_ind]
+    y1_cut = y1[comp_low_en:cut_ind]
+    y2_cut = y2[comp_low_en:cut_ind]
 
     ysub = y1_cut - y2_cut
 
@@ -30,7 +37,7 @@ def compton_counts(x1, x2, y1, y2):
 
     return totcounts
 
-def peak_counts(x1, x2, y1, y2):
+def peak_counts(x1, x2, y1, y2, peak_en, peak_width):
     ysub = y1-y2
     peakind = [False, -1]
     peaklow = [False, -1]
@@ -60,12 +67,12 @@ def peak_counts(x1, x2, y1, y2):
 
 
 
-spec1 = mca.Mca("Cs_068uCi_20cm.mca")
+spec1 = mca.Mca("pitchblende2.mca")
 spec2 = mca.Mca("bkg_pb2.mca")
 cut_en = 488
-cut_ind = -1
-peak_en = 661
-peak_width = 20
+comp_low_en = 200
+peak_ens = [63, 89, 127, 193, 249, 301, 358, 613, 668, 770, 1120, 1235, 1722, 1757, 1840]
+peak_width = 24
 
 x1 = spec1.get_points()[0]
 y1 = spec1.get_points()[1]
@@ -74,10 +81,28 @@ y2 = spec2.get_points()[1]
 
 y2 = y2*(float(spec1.get_variable("Live Time"))/float(spec2.get_variable("Live Time")))
 
-comp = compton_counts(x1, x2, y1, y2)
-print(comp)
-# peak = peak_counts(x1, x2, y1, y2)
-# print(peak/comp)
+ysub = y1 - y2
+totcount = 0
+for count in ysub:
+    totcount+=count
+
+pcounts = []
+for en in peak_ens:
+    pcounts.append(peak_counts(x1, x2, y1, y2, en, peak_width))
+
+det_eff = []
+for count in pcounts:
+    det_eff.append(count/totcount)
+
+det_eff = [i*100 for i in det_eff]
+plt.scatter(peak_ens, det_eff, color='r')
+plt.title("Detector efficiency vs Energy for Pitchblende")
+plt.xlabel("Energy (keV)")
+plt.ylabel("Detector efficiency")
+plt.savefig("DetEffvsEn.png")
+
+
+
 
 
 # print(float(spec1.get_variable("Live Time"))/float(spec2.get_variable("Live Time")))
